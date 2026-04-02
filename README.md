@@ -1,8 +1,8 @@
-# 🌍 HintLocale v2.1
+# 🌍 HintLocale v2.2
 
-Zero-dependency client-side locale detection. Identifies the user's **languages** and **country** using browser signals — no server, no cookies, no API calls.
+Zero-dependency locale detection for **browsers and servers**. Identifies the user's **languages** and **country** using browser signals or HTTP headers — no external APIs, no cookies.
 
-Works in **browsers** and **Node.js** from a single file (~24 KB, ~8 KB gzipped).
+Works with `<script>`, `require()`, `import` — single file, ~28 KB (~9 KB gzipped).
 
 ## Quick start
 
@@ -154,6 +154,101 @@ HintLocale.countriesForLanguage("fr");
 
 ```js
 HintLocale.countriesForTimezone("Europe/Berlin"); // ["DE"]
+```
+
+### `HintLocale.parseAcceptLanguage(header)`
+
+Parse an HTTP `Accept-Language` header into a sorted language array:
+
+```js
+HintLocale.parseAcceptLanguage("he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7");
+// ["he-IL", "he", "en-US", "en"]
+```
+
+### `HintLocale.fromRequest(req, [extra])`
+
+Server-side convenience — reads the `Accept-Language` header from any HTTP request object:
+
+```js
+const result = HintLocale.fromRequest(req, { timezone: "America/Bogota" });
+// result.topCountry → "CO"
+// result.topLanguage → "he"
+```
+
+---
+
+## Server-side usage
+
+HintLocale works on the server by reading the `Accept-Language` HTTP header.
+
+### Basic — raw Node.js HTTP
+
+```js
+const http = require("http");
+const HintLocale = require("hint-locale");
+
+http.createServer((req, res) => {
+  const locale = HintLocale.fromRequest(req);
+
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({
+    country: locale.topCountry,    // "IL"
+    language: locale.topLanguage,  // "he"
+    confidence: locale.countries[0]?.confidence  // 0.85
+  }));
+}).listen(3000);
+```
+
+That's it. `fromRequest` reads the `Accept-Language` header automatically — works with any Node.js HTTP request object (raw `http`, Express, Koa, Fastify, Hono).
+
+### Language-based redirect
+
+```js
+const locale = HintLocale.fromRequest(req);
+const lang = locale.topLanguage || "en";
+
+res.writeHead(302, { Location: "/" + lang + "/" });
+res.end();
+// Israeli user → /he/
+// Japanese user → /ja/
+// Everyone else → /en/
+```
+
+### With timezone (higher accuracy)
+
+The timezone isn't in HTTP headers, but you can send it from the client once and pass it as a cookie or query parameter:
+
+```html
+<!-- Client-side: send timezone on first visit -->
+<script>
+  if (!document.cookie.includes("tz=")) {
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.cookie = "tz=" + tz + ";path=/;max-age=31536000";
+    location.reload();
+  }
+</script>
+```
+
+```js
+// Server-side: read timezone from cookie and pass it
+const cookies = parseCookies(req.headers.cookie); // your cookie parser
+const locale = HintLocale.fromRequest(req, { timezone: cookies.tz });
+
+locale.topCountry;   // "CO" (much more accurate with timezone)
+locale.topLanguage;  // "he"
+```
+
+### Without timezone
+
+Without timezone the library still works — rare languages like Hebrew, Japanese, and Korean still give high confidence. Common languages like English give lower confidence since they're spoken in 124 countries.
+
+```js
+const locale = HintLocale.fromRequest(req);
+// Accept-Language: he-IL,en;q=0.8
+// → topCountry: "IL", confidence: 0.85 (Hebrew is unique to Israel)
+
+// Accept-Language: en
+// → topCountry: "US", confidence: 0.22 (English is everywhere — low confidence)
 ```
 
 ---

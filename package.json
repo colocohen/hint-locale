@@ -1,0 +1,71 @@
+{
+  "name": "hint-locale",
+  "version": "2.2.0",
+  "description": "Client & server locale detection from browser signals and HTTP headers - country, language, confidence scoring. Zero dependencies, single file.",
+  "main": "hint-locale.js",
+  "module": "hint-locale.mjs",
+  "browser": "hint-locale.js",
+  "exports": {
+    ".": {
+      "import": "./hint-locale.mjs",
+      "require": "./hint-locale.js",
+      "browser": "./hint-locale.js",
+      "default": "./hint-locale.js"
+    }
+  },
+  "types": "hint-locale.d.ts",
+  "files": [
+    "hint-locale.js",
+    "hint-locale.mjs",
+    "hint-locale.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "locale",
+    "language",
+    "country",
+    "detection",
+    "i18n",
+    "l10n",
+    "internationalization",
+    "localization",
+    "timezone",
+    "browser",
+    "server",
+    "express",
+    "accept-language",
+    "navigator",
+    "country-code",
+    "language-detection",
+    "iso-639",
+    "iso-3166",
+    "bcp47",
+    "umd",
+    "esm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colocohen/hint-locale.git"
+  },
+  "homepage": "https://github.com/colocohen/hint-locale#readme",
+  "bugs": {
+    "url": "https://github.com/colocohen/hint-locale/issues"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/colocohen"
+    },
+    {
+      "type": "opencollective",
+      "url": "https://opencollective.com/colocohen"
+    }
+  ],
+  "author": "colocohen",
+  "license": "MIT",
+  "sideEffects": false
+}

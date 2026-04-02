@@ -284,9 +284,75 @@
   function countriesForLanguage(c){_init();var e=_l2cc[String(c).toLowerCase()];return e?e.map(function(x){return{code:x.cc,isPrimary:x.isPrimary}}):[];}
   function countriesForTimezone(t){_init();return _tz2cc[t]?_tz2cc[t].slice():[];}
 
+  /**
+   * Parse an HTTP Accept-Language header into a sorted language array.
+   * Input:  "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7,fr;q=0.3"
+   * Output: ["he-IL", "he", "en-US", "en", "fr"]
+   *
+   * @param {string} header - The Accept-Language header value
+   * @returns {string[]} Language tags sorted by quality (descending)
+   */
+  function parseAcceptLanguage(header) {
+    if (!header || typeof header !== "string") return [];
+    var items = [];
+    var parts = header.split(",");
+    for (var i = 0; i < parts.length; i++) {
+      var seg = parts[i].trim();
+      if (!seg) continue;
+      var qIdx = seg.indexOf(";");
+      var tag, q;
+      if (qIdx === -1) {
+        tag = seg;
+        q = 1;
+      } else {
+        tag = seg.substring(0, qIdx).trim();
+        var qMatch = seg.substring(qIdx).match(/q\s*=\s*([0-9.]+)/);
+        q = qMatch ? parseFloat(qMatch[1]) : 1;
+      }
+      if (tag && tag !== "*") items.push({ tag: tag, q: q, pos: i });
+    }
+    // Sort by quality desc, then by original position asc (stable)
+    items.sort(function (a, b) { return b.q - a.q || a.pos - b.pos; });
+    var result = [];
+    for (var i = 0; i < items.length; i++) result.push(items[i].tag);
+    return result;
+  }
+
+  /**
+   * Server-side convenience: detect locale from an HTTP request object.
+   * Works with Express, Koa, raw Node.js, or any object with headers.
+   *
+   * @param {Object} req - HTTP request (needs req.headers["accept-language"])
+   * @param {Object} [extra] - Additional overrides
+   * @param {string} [extra.timezone] - Client timezone (e.g. from cookie or query)
+   * @returns {DetectResult}
+   */
+  function fromRequest(req, extra) {
+    var header = "";
+    if (req && req.headers) {
+      // Case-insensitive header lookup (covers Express lowercase, raw Node, and edge runtimes)
+      var h = req.headers;
+      var val = h["accept-language"] || h["Accept-Language"] || h["ACCEPT-LANGUAGE"];
+      if (!val) {
+        // Full case-insensitive fallback
+        for (var k in h) {
+          if (k.toLowerCase() === "accept-language") { val = h[k]; break; }
+        }
+      }
+      // Some frameworks pass arrays for duplicate headers
+      header = Array.isArray(val) ? val.join(",") : (val || "");
+    }
+    var langs = parseAcceptLanguage(header);
+    var opts = { languages: langs };
+    if (extra && extra.timezone) opts.timezone = extra.timezone;
+    return detect(opts);
+  }
+
   return {
     detect:detect, getCountry:getCountry, getLanguageName:getLanguageName,
     getLanguageRarity:getLanguageRarity, countriesForLanguage:countriesForLanguage,
-    countriesForTimezone:countriesForTimezone, version:"2.2.0"
+    countriesForTimezone:countriesForTimezone,
+    parseAcceptLanguage:parseAcceptLanguage, fromRequest:fromRequest,
+    version:"2.2.0"
   };
 });

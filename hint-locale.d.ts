@@ -91,11 +91,32 @@ declare module "hint-locale" {
     /** Get all country codes matching a timezone identifier */
     countriesForTimezone(tz: string): string[];
 
+    /**
+     * Parse an HTTP Accept-Language header into a sorted language array.
+     * @example parseAcceptLanguage("he-IL,he;q=0.9,en-US;q=0.8") → ["he-IL","he","en-US"]
+     */
+    parseAcceptLanguage(header: string): string[];
+
+    /**
+     * Server-side convenience: detect locale from an HTTP request.
+     * Reads the Accept-Language header automatically.
+     * @param req - HTTP request object with headers (Express, Koa, raw Node.js)
+     * @param extra - Optional overrides (e.g. timezone from cookie/query)
+     */
+    fromRequest(
+      req: { headers: Record<string, string | string[] | undefined> },
+      extra?: { timezone?: string }
+    ): DetectResult;
+
     /** Library version */
     version: string;
   }
 
   const hintLocale: HintLocale;
-  export default hintLocale;
+
+  // Supports both:
+  //   const HintLocale = require('hint-locale')       // CJS
+  //   import HintLocale from 'hint-locale'             // ESM default
+  //   import { detect, fromRequest } from 'hint-locale' // ESM named (via .mjs)
   export = hintLocale;
 }
