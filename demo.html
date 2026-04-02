@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HintLocale — Live Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a; color: #e2e8f0;
+      padding: 2rem; line-height: 1.6;
+      max-width: 720px; margin: 0 auto;
+    }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1 { font-size: 1.75rem; margin-bottom: .2rem; color: #f1f5f9; }
+    .tagline { color: #64748b; font-size: .9rem; margin-bottom: 1.5rem; }
+    h2 { font-size: .95rem; margin: 1.1rem 0 .4rem; color: #94a3b8; font-weight: 500; }
+    .card {
+      background: #1e293b; border-radius: 12px; padding: 1.25rem;
+      margin-bottom: .75rem; border: 1px solid #334155;
+    }
+    .top-result {
+      display: flex; align-items: center; gap: 1rem; padding: .5rem 0;
+    }
+    .top-result .flag { font-size: 2.75rem; }
+    .top-meta { font-size: .85rem; color: #94a3b8; }
+    .bar-bg {
+      height: 6px; background: #334155; border-radius: 3px;
+      margin-top: .35rem; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      transition: width .4s ease;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .4rem .65rem; text-align: left; font-size: .88rem; }
+    th { color: #64748b; font-weight: 500; font-size: .78rem; border-bottom: 1px solid #334155; text-transform: uppercase; letter-spacing: .03em; }
+    td { border-bottom: 1px solid rgba(51,65,85,.5); }
+    .badge {
+      display: inline-block; background: #334155; padding: .1rem .55rem;
+      border-radius: 6px; font-size: .78rem; font-family: "SF Mono", Monaco, Consolas, monospace;
+    }
+    .badge.primary { background: #1e3a5f; color: #38bdf8; }
+    .badge.secondary { background: #2d2235; color: #a78bfa; }
+    .dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      margin-right: .4rem; vertical-align: middle;
+    }
+    .form-row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: flex-end; }
+    label { font-size: .78rem; color: #94a3b8; display: block; margin-bottom: .2rem; text-transform: uppercase; letter-spacing: .03em; }
+    input {
+      background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+      padding: .5rem .75rem; border-radius: 8px; font-size: .88rem; width: 260px;
+    }
+    input:focus { outline: none; border-color: #38bdf8; }
+    .btn {
+      padding: .5rem 1.25rem; border: none; border-radius: 8px;
+      background: #38bdf8; color: #0f172a; font-weight: 600; cursor: pointer; font-size: .88rem;
+    }
+    .btn:hover { background: #7dd3fc; }
+    .presets { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .preset {
+      padding: .3rem .65rem; border-radius: 6px; font-size: .78rem;
+      background: #334155; color: #94a3b8; cursor: pointer; border: none;
+      transition: background .15s;
+    }
+    .preset:hover { background: #475569; color: #e2e8f0; }
+    pre {
+      background: #0f172a; padding: 1rem; border-radius: 8px;
+      overflow-x: auto; font-size: .78rem; color: #a5f3fc;
+      max-height: 360px; line-height: 1.5;
+    }
+    .tag {
+      display: inline-block; padding: .15rem .5rem; border-radius: 4px;
+      font-size: .73rem; margin: .15rem; font-family: "SF Mono", Monaco, Consolas, monospace;
+    }
+    .tag.nav  { background: #1e3a5f; color: #7dd3fc; }
+    .tag.tz   { background: #1a332e; color: #6ee7b7; }
+    .tag.lang { background: #2d2235; color: #c4b5fd; }
+    .sec { display: flex; align-items: center; gap: .4rem; }
+    .sec span { font-size: 1.05rem; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    @media (max-width: 600px) { .cols { grid-template-columns: 1fr; } input { width: 100%; } }
+    .muted { color: #64748b; }
+    .weight-bar { display: inline-block; height: 4px; border-radius: 2px; background: #818cf8; vertical-align: middle; margin-left: .4rem; }
+  </style>
+  <script src="hint-locale.js"></script>
+</head>
+<body>
+
+<h1>🌍 HintLocale</h1>
+<p class="tagline">Client-side locale detection — confidence scoring, language reranking, zero dependencies.</p>
+
+<div class="card">
+  <h2 class="sec"><span>🧪</span> Try it</h2>
+  <div class="presets">
+    <button class="preset" onclick="fill('he-IL, en-US','Asia/Jerusalem')">🇮🇱 Israel</button>
+    <button class="preset" onclick="fill('en, he, es','America/Bogota')">🇨🇴 Expat in Colombia</button>
+    <button class="preset" onclick="fill('en-US','America/New_York')">🇺🇸 USA</button>
+    <button class="preset" onclick="fill('en, ja','Asia/Tokyo')">🇯🇵 Dev in Japan</button>
+    <button class="preset" onclick="fill('fr-CA, en','America/Toronto')">🇨🇦 French Canadian</button>
+    <button class="preset" onclick="fill('zh-Hant-TW, en','Asia/Taipei')">🇹🇼 Taiwan</button>
+    <button class="preset" onclick="fill('de, en','Europe/Berlin')">🇩🇪 Germany</button>
+    <button class="preset" onclick="fill('ar-EG, en, fr','Africa/Cairo')">🇪🇬 Egypt</button>
+    <button class="preset" onclick="fill('ko, en, ja','Asia/Seoul')">🇰🇷 Korea</button>
+    <button class="preset" onclick="fill('en','')">🌐 English only</button>
+    <button class="preset" onclick="fill('','')">🔍 Auto-detect</button>
+  </div>
+  <div class="form-row">
+    <div>
+      <label for="langInput">Languages (comma-separated)</label>
+      <input id="langInput" placeholder="en-US, he, es">
+    </div>
+    <div>
+      <label for="tzInput">Timezone</label>
+      <input id="tzInput" placeholder="America/New_York">
+    </div>
+    <button class="btn" onclick="run()">Detect →</button>
+  </div>
+</div>
+
+<div id="results"></div>
+
+<h2 class="sec" style="margin-top:1rem"><span>📦</span> Raw JSON</h2>
+<pre id="raw"></pre>
+
+<script>
+function flag(c) {
+  if (!c || c.length !== 2) return '';
+  return String.fromCodePoint(0x1F1E6-65+c.charCodeAt(0), 0x1F1E6-65+c.charCodeAt(1));
+}
+function rarityColor(r) {
+  return r >= 0.5 ? '#34d399' : r >= 0.1 ? '#fbbf24' : '#f87171';
+}
+function rarityLabel(r) {
+  return r >= 0.5 ? 'rare' : r >= 0.1 ? 'medium' : 'common';
+}
+function fill(l, t) {
+  document.getElementById('langInput').value = l;
+  document.getElementById('tzInput').value = t;
+  run();
+}
+
+function run() {
+  var lv = document.getElementById('langInput').value.trim();
+  var tv = document.getElementById('tzInput').value.trim();
+  var ov = {};
+  if (lv) ov.languages = lv.split(',').map(function(s){ return s.trim(); });
+  if (tv) ov.timezone = tv;
+
+  var r = HintLocale.detect(Object.keys(ov).length ? ov : undefined);
+  var h = '';
+
+  // ── Top result ──
+  if (r.topCountry) {
+    var info = HintLocale.getCountry(r.topCountry);
+    h += '<div class="card"><div class="top-result">';
+    h += '<span class="flag">' + flag(r.topCountry) + '</span><div>';
+    h += '<div style="font-size:1.35rem"><strong>' + r.topCountry + '</strong>';
+    if (info && info.callingCode) h += ' <span class="muted" style="font-size:.9rem">+' + info.callingCode + '</span>';
+    h += '</div>';
+    h += '<div class="top-meta">Confidence: ' + Math.round(r.countries[0].confidence * 100) + '%';
+    h += ' · Score: ' + r.countries[0].score + '</div>';
+    h += '<div class="bar-bg" style="width:180px"><div class="bar-fill" style="width:' + (r.countries[0].confidence * 100) + '%"></div></div>';
+    h += '</div></div></div>';
+  }
+
+  // ── Signals ──
+  if (r.signals) {
+    h += '<div class="card"><h2 class="sec"><span>📡</span> Collected Signals</h2>';
+    h += '<div style="margin-top:.5rem">';
+    r.signals.navigatorRegions.forEach(function(reg) {
+      var pct = (1 / (1 + reg.position * 0.35) * 100).toFixed(0);
+      h += '<span class="tag nav">region: ' + flag(reg.code) + ' ' + reg.code + ' · #' + reg.position + ' → ' + pct + '% weight</span>';
+    });
+    r.signals.timezoneCountries.forEach(function(cc) {
+      h += '<span class="tag tz">tz → ' + flag(cc) + ' ' + cc + ' · uniqueness: ' + (r.signals.timezoneUniqueness * 100).toFixed(0) + '%</span>';
+    });
+    r.signals.detectedLanguages.forEach(function(l) {
+      var rr = HintLocale.getLanguageRarity(l);
+      h += '<span class="tag lang">' + l + ' · rarity: ' + rr.toFixed(2) + '</span>';
+    });
+    if (r.timezone) h += '<br><span class="muted" style="font-size:.78rem;margin-top:.3rem;display:inline-block">timezone: ' + r.timezone + '</span>';
+    h += '</div></div>';
+  }
+
+  // ── Languages (reranked) ──
+  if (r.languages.length) {
+    var maxW = r.languages[0].weight;
+    h += '<div class="card"><h2 class="sec"><span>🗣</span> Languages <span class="muted" style="font-size:.75rem;font-weight:400">(reranked by weight)</span></h2>';
+    h += '<table><tr><th>Rank</th><th>Code</th><th>Name</th><th>Rarity</th><th>Weight</th></tr>';
+    r.languages.forEach(function(l, i) {
+      var barW = Math.round(l.weight / maxW * 60);
+      h += '<tr><td>' + (i + 1) + ' <span class="muted" style="font-size:.7rem">was #' + l.originalPosition + '</span></td>';
+      h += '<td><span class="badge">' + l.code + '</span></td>';
+      h += '<td>' + (l.name || '—') + '</td>';
+      h += '<td><span class="dot" style="background:' + rarityColor(l.rarity) + '"></span>' + rarityLabel(l.rarity) + ' <span class="muted">(' + l.rarity.toFixed(3) + ')</span></td>';
+      h += '<td>' + l.weight + '<span class="weight-bar" style="width:' + barW + 'px"></span></td></tr>';
+    });
+    h += '</table></div>';
+  }
+
+  // ── Countries ──
+  if (r.countries.length) {
+    h += '<div class="card"><h2 class="sec"><span>📍</span> Candidate Countries</h2>';
+    h += '<table><tr><th>Country</th><th>Score</th><th>Confidence</th><th>Primary lang</th></tr>';
+    var shown = Math.min(r.countries.length, 12);
+    for (var i = 0; i < shown; i++) {
+      var c = r.countries[i];
+      var cInfo = HintLocale.getCountry(c.code);
+      h += '<tr><td>' + flag(c.code) + ' ' + c.code + '</td>';
+      h += '<td>' + c.score + '</td>';
+      h += '<td><div style="display:flex;align-items:center;gap:.4rem">'
+        + Math.round(c.confidence * 100) + '%'
+        + '<div class="bar-bg" style="width:70px"><div class="bar-fill" style="width:' + (c.confidence * 100) + '%"></div></div></div></td>';
+      if (cInfo) {
+        var match = r.languages.length > 0 && cInfo.primaryLanguage === r.languages[0].code;
+        h += '<td><span class="badge ' + (match ? 'primary' : 'secondary') + '">'
+          + (cInfo.primaryLanguage || '—') + (match ? ' ✓' : '') + '</span></td>';
+      } else {
+        h += '<td>—</td>';
+      }
+      h += '</tr>';
+    }
+    if (r.countries.length > shown) {
+      h += '<tr><td colspan="4" class="muted" style="text-align:center">…and ' + (r.countries.length - shown) + ' more</td></tr>';
+    }
+    h += '</table></div>';
+  }
+
+  document.getElementById('results').innerHTML = h;
+  document.getElementById('raw').textContent = JSON.stringify(r, null, 2);
+}
+
+run();
+</script>
+</body>
+</html>
