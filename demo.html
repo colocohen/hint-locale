@@ -99,6 +99,7 @@
   <div class="presets">
     <button class="preset" onclick="fill('he-IL, en-US','Asia/Jerusalem')">🇮🇱 Israel</button>
     <button class="preset" onclick="fill('en, he, es','America/Bogota')">🇨🇴 Expat in Colombia</button>
+    <button class="preset" onclick="fill('he-IL, es, en','America/Bogota')">🇮🇱→🇨🇴 he-IL in Bogotá</button>
     <button class="preset" onclick="fill('en-US','America/New_York')">🇺🇸 USA</button>
     <button class="preset" onclick="fill('en, ja','Asia/Tokyo')">🇯🇵 Dev in Japan</button>
     <button class="preset" onclick="fill('fr-CA, en','America/Toronto')">🇨🇦 French Canadian</button>
@@ -164,6 +165,9 @@ function run() {
     h += '</div>';
     h += '<div class="top-meta">Confidence: ' + Math.round(r.countries[0].confidence * 100) + '%';
     h += ' · Score: ' + r.countries[0].score + '</div>';
+    if (r.residenceCountry && r.residenceCountry !== r.topCountry) {
+      h += '<div class="top-meta">📍 Currently in: ' + flag(r.residenceCountry) + ' ' + r.residenceCountry + ' <span class="muted">(timezone)</span></div>';
+    }
     h += '<div class="bar-bg" style="width:180px"><div class="bar-fill" style="width:' + (r.countries[0].confidence * 100) + '%"></div></div>';
     h += '</div></div></div>';
   }
