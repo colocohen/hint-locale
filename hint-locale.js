@@ -1,13 +1,39 @@
 /**
- * HintLocale v2.3.0
+ * HintLocale v2.4.0
  * Client-side locale detection with confidence scoring.
  * Works in browsers and Node.js (single UMD file).
  *
  * Signals used:
  *   1. navigator.languages  → explicit region subtags + language codes
+ *      (on a server: the Accept-Language header — the same list)
  *   2. Intl timezone        → country narrowing
- *   3. Language rarity       → rare language = stronger country signal
- *   4. Primary vs secondary  → "he" is primary in IL, "en" is secondary
+ *   3. Country hint          → optional, from outside (IP geolocation on a
+ *                              server) — used where the timezone is silent
+ *   4. Language rarity       → rare language = stronger country signal
+ *   5. Primary vs secondary  → "he" is primary in IL, "en" is secondary
+ *
+ * Options of detect(ov):
+ *   languages  string | string[]   default: navigator.languages
+ *   timezone   string | null       default: this machine's Intl timezone.
+ *                                  Pass null to say "unknown" — a server
+ *                                  must, or it reads its OWN timezone.
+ *   country    'CO' | null         a country known from outside, e.g. IP.
+ *                                  Where you are, like the timezone, but
+ *                                  weaker: a VPN or a trip moves it. So it
+ *                                  fills in when the timezone is missing,
+ *                                  narrows a multi-country timezone, and
+ *                                  never overrides a timezone that points
+ *                                  elsewhere.
+ *
+ * 2.4.0 — server use:
+ *   - fromRequest() no longer lets detect() fall back to the server's own
+ *     timezone. It did: on a server in Bogota every visitor got a Colombia
+ *     boost, and "en-US,en;q=0.9,es;q=0.8" came out Spanish.
+ *   - The "OS default" penalty (common language first = probably just the
+ *     OS) now needs a location to judge by. Without one it fired on every
+ *     English-first list and demoted English below the second language.
+ *     A browser always has a timezone, so browser results are unchanged.
+ *   - country option (above), and fromRequest(req, { country }).
  *
  * @license MIT
  */
@@ -168,8 +194,24 @@
       if(p.region&&!sR[p.region]){regs.push({code:p.region,pos:i});sR[p.region]=1;}
     }
 
-    var tz = ov.timezone || (function(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||null;}catch(e){return null;}})();
-    var tzCC = (tz&&_tz2cc[tz]) ? _tz2cc[tz] : [];
+    // 'timezone' given (even null) = the caller knows; absent = this
+    // machine's. Only a browser should take the absent path — on a server
+    // the machine's timezone is the server's, not the visitor's.
+    var tz = ("timezone" in ov) ? (ov.timezone || null)
+           : (function(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||null;}catch(e){return null;}})();
+    var tzOnly = (tz&&_tz2cc[tz]) ? _tz2cc[tz] : [];
+
+    // Country hint (IP) merged into the location signal — see the header.
+    // tzCC below is "where the visitor is": the timezone's countries,
+    // narrowed or filled in by the hint.
+    var hintCC = ov.country ? String(ov.country).toUpperCase() : null;
+    if (hintCC && !_cc[hintCC]) hintCC = null;
+    var tzCC = tzOnly;
+    if (hintCC) {
+      if (!tzOnly.length) tzCC = [hintCC];                          // no timezone → the hint
+      else if (tzOnly.indexOf(hintCC) !== -1) tzCC = [hintCC];      // narrows a shared zone
+      // else: the timezone points elsewhere — it wins (VPN, travel)
+    }
 
     // Build candidates
     var cands = Object.create(null);
@@ -252,8 +294,11 @@
 
       // OS default penalty: very common language at pos 0 is likely OS, not preference
       // BUT only if it's NOT spoken in the timezone country — if it IS, it's natural.
+      // And only when there IS a location to judge by (tzTopRec): with none,
+      // "not spoken where you live" can't be told from "don't know where you
+      // live", and the penalty demoted every English-first list.
       var osPenalty = 1;
-      if (i === 0 && rarity < 0.02 && tzBoost === 1) osPenalty = 0.6;
+      if (i === 0 && rarity < 0.02 && tzTopRec && tzBoost === 1) osPenalty = 0.6;
 
       var ew = posBase * tzBoost * rarBoost * osPenalty;
 
@@ -284,7 +329,7 @@
       residenceCountry: residence,
       topCountry: countries.length?countries[0].code:null,
       topLanguage: langRes.length?langRes[0].code:null,
-      signals: { navigatorRegions:regs.map(function(r){return{code:r.code,position:r.pos};}), timezoneCountries:tzCC, timezoneUniqueness:tzCount<=1?1:Math.round(100/tzCount)/100, detectedLanguages:langs }
+      signals: { navigatorRegions:regs.map(function(r){return{code:r.code,position:r.pos};}), timezoneCountries:tzOnly, countryHint:hintCC, locationCountries:tzCC, timezoneUniqueness:tzCount<=1?1:Math.round(100/tzCount)/100, detectedLanguages:langs }
     };
   }
 
@@ -340,7 +385,11 @@
    * @param {Object} req - HTTP request (needs req.headers["accept-language"])
    * @param {Object} [extra] - Additional overrides
    * @param {string} [extra.timezone] - Client timezone (e.g. from cookie or query)
+   * @param {string} [extra.country]  - Client country from outside (e.g. IP geolocation)
    * @returns {DetectResult}
+   *
+   * The timezone is always passed on — null when not given — so detect()
+   * never reads the SERVER's timezone as the visitor's.
    */
   function fromRequest(req, extra) {
     var header = "";
@@ -358,8 +407,11 @@
       header = Array.isArray(val) ? val.join(",") : (val || "");
     }
     var langs = parseAcceptLanguage(header);
-    var opts = { languages: langs };
-    if (extra && extra.timezone) opts.timezone = extra.timezone;
+    var opts = {
+      languages: langs,
+      timezone:  (extra && extra.timezone) || null,
+      country:   (extra && extra.country) || null
+    };
     return detect(opts);
   }
 
@@ -368,6 +420,6 @@
     getLanguageRarity:getLanguageRarity, countriesForLanguage:countriesForLanguage,
     countriesForTimezone:countriesForTimezone,
     parseAcceptLanguage:parseAcceptLanguage, fromRequest:fromRequest,
-    version:"2.3.0"
+    version:"2.4.0"
   };
 });
